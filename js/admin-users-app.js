@@ -1,74 +1,33 @@
-let eventBus = new Vue();
-
-Vue.component("users-repository", {
-    data(){
-        return {
-            baseUrl:"https://127.0.0.1:8433"
+class UserApi{
+    constructor(baseUrl, vueEventBus){
+        this.baseUrl = baseUrl;
+        this.apiAdapter = apiConnect(this.baseUrl);
+        this.eventBus = vueEventBus;
+        
+        if (null==this.eventBus) throw "UserApi() Vue event bus is now defined";
+        console.log('UserApi("' + this.baseUrl + '") created');
+    }
+    copyNonEmptyFields(obj){
+        let objOut = {};
+        for(const [k,v] of Object.entries(obj)){
+            if(''!=v) objOut[k] = v;
         }
-    },
-    methods:{
-        copyNonEmptyFields(obj){
-            let objOut = {};
-            for([k,v] of Object.entries(obj)){
-                if(''!=v){
-                    objOut[k] = v;
-                }
-            }
-            return objOut;
-        },
-        fetchUsers(){
-            let url = this.baseUrl + "/admin/user/";                        
-            fetch(url,{
-                credentials: "include",
-                method: 'GET'
-            }).then(response => response.json() )
-            .then(json => eventBus.$emit("onFetchUsers", json));
-        },
-        addUser(user){
-            let url = this.baseUrl + "/admin/user/";   
-            var userFields = this.copyNonEmptyFields(user);
-            fetch(url, {
-                credentials: "include",
-                method: 'POST',
-                headers: {
-                    'Content-type': 'application/json',
-                },                
-                body: JSON.stringify(userFields)
-            }).then(resp => resp.json())
-            .then(u => eventBus.$emit("onAddUser", u) )
-        },
-        saveUser(user){
-            let url = this.baseUrl + "/admin/user/" + user.id;                        
-            fetch(url, {
-                credentials: "include",
-                method: 'POST',
-                headers: {
-                    'Content-type': 'application/json',
-                },                
-                body: JSON.stringify(user)
-            }).then(resp => resp.json())
-            .then(u => eventBus.$emit("onSaveUser", u) )
-        },
-        deleteUser(user){
-            let url = this.baseUrl + "/admin/user/" + user.id;
-            fetch(url, {
-                credentials: "include",
-                method: 'DELETE',
-            }).then(resp => {
-                if (resp.ok) eventBus.$emit("onDeleteUser", user)
-            })
-        }
-
-    },
-    created(){
-        eventBus.$on("fetchUsers", () => this.fetchUsers());
-        eventBus.$on("addUser", u => this.addUser(u));
-        eventBus.$on("saveUser", u => this.saveUser(u));
-        eventBus.$on("deleteUser", u => this.deleteUser(u));
-        console.log('users-repository created');
-    },
-    template:' '
-});
+        return objOut;
+    }
+    fetchUsers(){
+        this.apiAdapter.get('/').then(json => this.eventBus.$emit("onFetchUsers", json));
+    }
+    addUser(user){
+        let userFields = this.copyNonEmptyFields(user);
+        this.apiAdapter.post('/', userFields).then(u => this.eventBus.$emit("onAddUser", u) );
+    }
+    saveUser(user){
+        this.apiAdapter.post('/' + user.id, user).then(u => this.eventBus.$emit("onSaveUser", u) );
+    }
+    deleteUser(user){
+        this.apiAdapter.del('/' + user.id).then(() => this.eventBus.$emit("onDeleteUser", user) );
+    }
+}
 
 Vue.component("users-table", {
     data(){
@@ -81,13 +40,11 @@ Vue.component("users-table", {
             eventBus.$emit('showUserDetails', user);
         },
         onDeleteClick(user){
-            eventBus.$emit('deleteUser', user);
+            //eventBus.$emit('deleteUser', user);
+            userApi.deleteUser(user);
         },
         getUserIndexById(id){
-            for(const [i,e] of this.users.entries()){
-                if (e.id==id) return i;
-            };
-            return -1;
+           return this.users.findIndex( u => id==u.id );
         },
         onFetchUsers(usersList){
             this.users = usersList;
@@ -108,16 +65,14 @@ Vue.component("users-table", {
         }
     },
     created(){
-        eventBus.$on("onFetchUsers", u => this.onFetchUsers(u));
+        eventBus.$on("onFetchUsers", ul => this.onFetchUsers(ul));
         eventBus.$on("onAddUser", u => this.onAddUser(u));
         eventBus.$on("onSaveUser", u => this.onSaveUser(u));
         eventBus.$on("onDeleteUser", u => this.onDeleteUser(u));
-        
-        eventBus.$emit("fetchUsers");        
         console.log('users-table created')
     },
     template:
-        `<table class="table table-hover">
+        `<table class="table table-hover table-condensed">
         <thead><tr>
             <th>ID</th>
             <th>Login</th>
@@ -182,11 +137,11 @@ Vue.component("user-details", {
         commit(){
             this.user.roles = ("" + this.user.roles).split(',');
             if (this.user.id>0){
-                eventBus.$emit("saveUser", this.user);
+                userApi.saveUser(this.user);
                 this.reset();
             }else{
                 if (this.validateForm()){
-                    eventBus.$emit("addUser", this.user);
+                    userApi.addUser(this.user);
                     this.reset();
                 }
             }
@@ -225,15 +180,11 @@ Vue.component("user-details", {
             <div class="col-md-10"><input name="user_roles" class="form-control" v-model="user.roles"></input></div>
         </div>
     </form>
-    <div>
-        <button class="btn btn-default" @click="reset">Новый</button>
+    <div class="text-center">
+        <button class="btn btn-default" @click="reset">Очистить</button>
         <button class="btn btn-success" @click="commit">Сохранить</button>
     </div>
     </div>
     `
 
-});
-
-var vueApp = new Vue({
-    el: "#admin-users-app",
 });
