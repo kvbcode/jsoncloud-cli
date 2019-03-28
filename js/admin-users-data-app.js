@@ -17,7 +17,17 @@ class AdminUserDataApi{
         this.apiAdapter.get('/' + userId + '/data/' + appId + '/' + dataType).then(json => this.eventBus.$emit("onFetchUserData", json));
     }
     add(userId, appId, dataType, data){
-        this.apiAdapter.postRaw('/' + userId + '/data/' + appId + '/' + dataType, data).then(data => this.eventBus.$emit("onAddUserData", data) );
+        let dataRecord = {
+            "id":null,
+            "user_id":userId,
+            "appId":appId,
+            "dataType":dataType,
+            "jsonData":data
+        }
+        this.apiAdapter.postRaw('/' + userId + '/data/' + appId + '/' + dataType, data).then(resp => {
+            dataRecord.id = resp.id;
+            this.eventBus.$emit("onAddUserData", dataRecord);
+        });
     }
     get(id){
         this.apiAdapter.get('/data/' + id).then(data => this.eventBus.$emit("onGetUserData", data));

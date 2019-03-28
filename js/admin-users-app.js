@@ -19,10 +19,15 @@ class UserApi{
     }
     addUser(user){
         let userFields = this.copyNonEmptyFields(user);
-        this.apiAdapter.post('/', userFields).then(u => this.eventBus.$emit("onAddUser", u) );
+        this.apiAdapter.postJson('/', userFields).then(resp => {
+            user.id = resp.id;
+            user.password = '';
+            this.eventBus.$emit("onAddUser", user);
+        });
     }
     saveUser(user){
-        this.apiAdapter.post('/' + user.id, user).then(u => this.eventBus.$emit("onSaveUser", u) );
+        let userFields = this.copyNonEmptyFields(user);
+        this.apiAdapter.postJson('/' + user.id, userFields).then(u => this.eventBus.$emit("onSaveUser", user) );
     }
     deleteUser(user){
         this.apiAdapter.del('/' + user.id).then(() => this.eventBus.$emit("onDeleteUser", user) );

@@ -8,7 +8,7 @@ function apiConnect(baseUrl){
             console.log(resp);
         })
     }
-    function post(route, dataObj){
+    function postJson(route, dataObj){
         return fetch(baseUrl + route, {
             credentials: "include",
             method: 'POST',
@@ -40,5 +40,5 @@ function apiConnect(baseUrl){
             console.log(resp);
         })
     }
-    return {get, post, postRaw, del};        
+    return {get, postJson, postRaw, del};        
 }
