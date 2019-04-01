@@ -31,8 +31,9 @@
         <script src="js/api-connect.js"></script>
         <script src="js/admin-users-app.js"></script>
         <script>
+            var serverPath = 'https://127.0.0.1:8433';
             var eventBus = new Vue();
-            var userApi = new UserApi('https://127.0.0.1:8433/admin/user', eventBus);
+            var userApi = new UserApi(serverPath + '/admin/user', eventBus);
 
             var vueApp = new Vue({
                 el: "#admin-users-app",

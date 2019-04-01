@@ -30,16 +30,18 @@
         <script src="js/admin-users-app.js"></script>
         <script src="js/admin-users-data-app.js"></script>
         <script>
+            var serverPath = 'https://127.0.0.1:8433';
             var eventBus = new Vue();            
-            var userApi = new UserApi('https://127.0.0.1:8433/admin/user', eventBus);
-            var adminUserDataApi = new AdminUserDataApi('https://127.0.0.1:8433/admin/user', eventBus);
+            var userApi = new UserApi(serverPath + '/admin/user', eventBus);
+            var adminUserDataApi = new AdminUserDataApi(serverPath + '/admin/user', eventBus);
 
             var vueApp = new Vue({
                 el: "#admin-users-data-app",
             });
 
+            eventBus.$on("onSaveUserData", data => adminUserDataApi.get(data.id));
+
             userApi.fetchUsers();
-            adminUserDataApi.fetchAllByUserId(330);                    
         </script>
     </body>
 </html>    
